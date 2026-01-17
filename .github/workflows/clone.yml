@@ -22,17 +22,16 @@ jobs:
           token: ${{ secrets.CLONE_SECRET_TOKEN || github.token }}
 
       - name: gh login
+        env:
+          CLONE_TOKEN: ${{ secrets.CLONE_SECRET_TOKEN || github.token }}
         run: |
           # Use CLONE_SECRET_TOKEN if available, otherwise use GITHUB_TOKEN
-          TOKEN="${{ secrets.CLONE_SECRET_TOKEN }}"
-          if [ -z "$TOKEN" ]; then
-            TOKEN="${{ github.token }}"
-          fi
-          echo "$TOKEN" | gh auth login --with-token
+          echo "$CLONE_TOKEN" | gh auth login --with-token
 
       - name: parse latest clone count
         env:
           GITHUB_TOKEN: ${{ secrets.CLONE_SECRET_TOKEN || github.token }}
+          HAS_CLONE_SECRET: ${{ secrets.CLONE_SECRET_TOKEN != '' }}
         run: |
           set -euo pipefail
           # Check if we have the required permissions
@@ -41,7 +40,7 @@ jobs:
           # 2. GITHUB_TOKEN typically doesn't have access to traffic data
           # 3. A Personal Access Token (PAT) with repo scope is needed
           # If CLONE_SECRET_TOKEN is not set, we'll try with GITHUB_TOKEN but it might fail
-          if [ -z "${{ secrets.CLONE_SECRET_TOKEN }}" ]; then
+          if [ "$HAS_CLONE_SECRET" != "true" ]; then
             echo "Warning: CLONE_SECRET_TOKEN not set. Using GITHUB_TOKEN which may not have sufficient permissions."
             echo "To fix this, create a Personal Access Token with 'repo' scope and add it as CLONE_SECRET_TOKEN secret."
           fi
